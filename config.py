@@ -8,6 +8,9 @@ AUTH_URL = "https://api.teamplace.finneg.com/api/oauth/token"
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 
+if not CLIENT_ID or not CLIENT_SECRET:
+    raise ValueError("CLIENT_ID y CLIENT_SECRET deben estar configurados en .env")
+
 # Endpoints
 STOCK_URL = "https://api.finneg.com/api/reports/StockDepositoDuhau"
 PRESUPUESTADO_URL = "https://api.finneg.com/api/reports/AnalisisInsumosPresupuestadoDuhau"
