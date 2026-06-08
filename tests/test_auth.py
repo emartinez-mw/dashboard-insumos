@@ -16,11 +16,11 @@ def test_get_token_success():
     mock_response.json.return_value = {"access_token": "abc123", "expires_in": 3600}
     mock_response.raise_for_status.return_value = None
 
-    with patch("api.auth.requests.post", return_value=mock_response) as mock_post:
+    with patch("api.auth.requests.get", return_value=mock_response) as mock_get:
         token = get_token()
 
     assert token == "abc123"
-    mock_post.assert_called_once_with(
+    mock_get.assert_called_once_with(
         AUTH_URL,
         params={
             "grant_type": "client_credentials",
@@ -35,7 +35,7 @@ def test_get_token_cached():
     mock_response.json.return_value = {"access_token": "xyz789", "expires_in": 3600}
     mock_response.raise_for_status.return_value = None
 
-    with patch("api.auth.requests.post", return_value=mock_response) as mock_post:
+    with patch("api.auth.requests.get", return_value=mock_response) as mock_post:
         token1 = get_token()
         token2 = get_token()
 
@@ -47,6 +47,6 @@ def test_get_token_raises_on_http_error():
     mock_response = MagicMock()
     mock_response.raise_for_status.side_effect = Exception("401 Unauthorized")
 
-    with patch("api.auth.requests.post", return_value=mock_response):
+    with patch("api.auth.requests.get", return_value=mock_response):
         with pytest.raises(Exception, match="401 Unauthorized"):
             get_token()
