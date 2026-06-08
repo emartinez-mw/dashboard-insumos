@@ -39,18 +39,36 @@ PENDIENTE_FIXED_PARAMS = {
 }
 
 # Mapeo de columnas de la API → nombres internos
-# ACTUALIZAR en Task 5 con los nombres reales de la API
+# Actualizado en Task 5 con nombres reales verificados contra la API (2026-06-08)
+#
+# Notas importantes:
+#   - StockDeposito: no tiene columna EMPRESA ni SUCURSAL; usa DEPOSITO como ubicación.
+#     El campo PRINCIPIOACTIVO no tiene espacio (diferente a Presupuestado).
+#   - Presupuestado: el producto está en LABORPRODUCTO (no PRODUCTO).
+#     PRINCIPIO ACTIVO tiene un espacio en el nombre. Tiene EMPRESA pero no SUCURSAL.
+#   - Pendiente: tiene PRODUCTO, EMPRESA, SUCURSAL. PRINCIPIO ACTIVO no existe en este endpoint.
+#   - Los 3 endpoints devuelven una lista JSON directa (no {"data": [...]}).
 COLUMN_MAP = {
-    "producto":         "producto",        # columna producto en los 3 servicios
-    "empresa":          "empresa",         # columna empresa en los 3 servicios
-    "rubro":            "rubro",           # columna rubro
-    "principio_activo": "principio_activo",# columna principio activo
-    "sucursal":         "sucursal",        # columna sucursal
-    "stock_qty":        "cantidad",        # columna cantidad en StockDeposito
-    "presupuestado_qty":"cantidad",        # columna cantidad en Presupuestado
-    "pendiente_qty":    "cantidad",        # columna cantidad en Pendiente
-    "anio_mes":         "anio_mes",        # columna año-mes (si existe en la API)
+    "producto":              "PRODUCTO",           # Stock: PRODUCTO | Presupuestado: LABORPRODUCTO | Pendiente: PRODUCTO
+    "empresa":               "EMPRESA",            # Stock: ausente (usa DEPOSITO) | Presupuestado: EMPRESA | Pendiente: EMPRESA
+    "rubro":                 "RUBRO",              # los 3 servicios
+    "principio_activo_stock":"PRINCIPIOACTIVO",    # StockDeposito (sin espacio)
+    "principio_activo_pres": "PRINCIPIO ACTIVO",  # Presupuestado (con espacio)
+    "sucursal":              "SUCURSAL",           # solo en Pendiente; Stock y Presupuestado no tienen
+    "deposito":              "DEPOSITO",           # Stock y Presupuestado; equivale a ubicación
+    "stock_qty":             "CANTIDAD1",          # StockDeposito usa CANTIDAD1 (CANTIDAD2 = toneladas)
+    "presupuestado_qty":     "CANTIDAD",           # Presupuestado
+    "pendiente_qty":         "CANTIDAD",           # Pendiente (PENDIENTERECEPCION = pendiente exacto)
+    "pendiente_recepcion":   "PENDIENTERECEPCION", # Pendiente: cantidad aún no recibida
+    "anio_mes":              "ANO-MES",            # Presupuestado y Pendiente tienen ANO-MES; Stock no
+    "subfamilia":            "SUBFAMILIA",         # los 3 servicios
+    "familia":               "FAMILIA",            # los 3 servicios
+    "marca":                 "MARCA",              # los 3 servicios
 }
 
 # Campos comunes para el merge
-MERGE_KEYS = ["producto", "empresa", "rubro", "principio_activo", "sucursal"]
+# ADVERTENCIA: no hay un conjunto de claves que exista en los 3 endpoints con el mismo nombre.
+# Stock no tiene EMPRESA/SUCURSAL; Presupuestado no tiene SUCURSAL; Pendiente no tiene PRINCIPIOACTIVO.
+# El merge debe hacerse por pares (Stock+Presupuestado por PRODUCTO+RUBRO+DEPOSITO,
+# Presupuestado+Pendiente por PRODUCTO+EMPRESA+RUBRO) o normalizando antes.
+MERGE_KEYS = ["PRODUCTO", "RUBRO", "EMPRESA"]

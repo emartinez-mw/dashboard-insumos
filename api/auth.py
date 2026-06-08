@@ -9,7 +9,7 @@ def get_token() -> str:
     if _token_cache["token"] and time.time() < _token_cache["expires_at"]:
         return _token_cache["token"]
 
-    response = requests.post(AUTH_URL, params={
+    response = requests.get(AUTH_URL, params={
         "grant_type": "client_credentials",
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,

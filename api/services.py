@@ -13,7 +13,9 @@ def _fetch(url: str, params: dict) -> pd.DataFrame:
     all_params = {"ACCESS_TOKEN": token, **params}
     response = requests.get(url, params=all_params)
     response.raise_for_status()
-    data = response.json().get("data", [])
+    payload = response.json()
+    # API returns a list directly (not {"data": [...]})
+    data = payload if isinstance(payload, list) else payload.get("data", [])
     return pd.DataFrame(data)
 
 
