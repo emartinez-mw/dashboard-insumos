@@ -1,10 +1,13 @@
 # app.py
 from datetime import datetime
+import pandas as pd
 import streamlit as st
 import plotly.express as px
 from api.services import fetch_stock, fetch_presupuestado, fetch_pendiente
 from data.transform import merge_services, add_cobertura, prepare_anio_mes
 from config import MERGE_KEYS
+
+pd.set_option("styler.render.max_elements", 5_000_000)
 
 st.set_page_config(page_title="Dashboard Insumos — Duhau", layout="wide")
 st.title("Dashboard de Insumos Agrícolas — Duhau")
