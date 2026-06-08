@@ -15,9 +15,8 @@ def get_token() -> str:
         "client_secret": CLIENT_SECRET,
     })
     response.raise_for_status()
-    data = response.json()
-
-    _token_cache["token"] = data["access_token"]
-    _token_cache["expires_at"] = time.time() + data.get("expires_in", 3600) - 60
+    # API devuelve el token como texto plano (UUID), no como JSON
+    _token_cache["token"] = response.text.strip()
+    _token_cache["expires_at"] = time.time() + 3600 - 60
 
     return _token_cache["token"]

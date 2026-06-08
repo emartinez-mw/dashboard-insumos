@@ -13,13 +13,13 @@ def reset_token_cache():
 
 def test_get_token_success():
     mock_response = MagicMock()
-    mock_response.json.return_value = {"access_token": "abc123", "expires_in": 3600}
+    mock_response.text = "abc123-uuid-token"
     mock_response.raise_for_status.return_value = None
 
     with patch("api.auth.requests.get", return_value=mock_response) as mock_get:
         token = get_token()
 
-    assert token == "abc123"
+    assert token == "abc123-uuid-token"
     mock_get.assert_called_once_with(
         AUTH_URL,
         params={
@@ -32,7 +32,7 @@ def test_get_token_success():
 
 def test_get_token_cached():
     mock_response = MagicMock()
-    mock_response.json.return_value = {"access_token": "xyz789", "expires_in": 3600}
+    mock_response.text = "xyz789-uuid-token"
     mock_response.raise_for_status.return_value = None
 
     with patch("api.auth.requests.get", return_value=mock_response) as mock_post:
