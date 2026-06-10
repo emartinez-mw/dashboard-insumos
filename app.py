@@ -75,6 +75,10 @@ table_df = filtered[display_cols].copy()
 table_df = table_df.rename(columns=col_labels)
 
 
+NUM_COLS = ["Stock Actual", "Presupuestado", "Pendiente Recepción", "Cobertura"]
+num_cols_present = [c for c in NUM_COLS if c in table_df.columns]
+
+
 def color_cobertura(val):
     if isinstance(val, (int, float)):
         color = "#d4edda" if val >= 0 else "#f8d7da"
@@ -83,7 +87,9 @@ def color_cobertura(val):
 
 
 st.dataframe(
-    table_df.style.map(color_cobertura, subset=["Cobertura"]),
+    table_df.style
+        .format("{:,.2f}", subset=num_cols_present)
+        .map(color_cobertura, subset=["Cobertura"] if "Cobertura" in table_df.columns else []),
     use_container_width=True,
     hide_index=True,
 )
