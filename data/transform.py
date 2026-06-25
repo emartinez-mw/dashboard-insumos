@@ -1,71 +1,141 @@
+from datetime import date
 import pandas as pd
 from config import MERGE_KEYS
 
-
-def _normalize_presup(df: pd.DataFrame) -> pd.DataFrame:
-    """Rename LABORPRODUCTO → PRODUCTO in Presupuestado DataFrame."""
-    if df.empty:
-        return df
-    return df.rename(columns={"LABORPRODUCTO": "PRODUCTO"})
+_DESC_COLS = [
+    "EMPRESAPADRE", "FAMILIA", "SUBFAMILIA",
+    "PRINCIPIOACTIVO", "FORMULACION", "CENTROLOGISTICO",
+]
 
 
-def merge_services(stock: pd.DataFrame, presup: pd.DataFrame,
+def _agg_qty(df: pd.DataFrame, raw_col: str, out_col: str) -> pd.DataFrame:
+    """Sum a quantity column by MERGE_KEYS, return only MERGE_KEYS + out_col."""
+    if df.empty or raw_col not in df.columns:
+        return pd.DataFrame(columns=MERGE_KEYS + [out_col])
+    return (
+        df.rename(columns={raw_col: out_col})
+        .groupby(MERGE_KEYS, as_index=False)[out_col]
+        .sum()
+    )
+
+
+def _strip_strings(df: pd.DataFrame) -> pd.DataFrame:
+    for col in df.select_dtypes(include="object").columns:
+        df[col] = df[col].apply(lambda v: v.strip() if isinstance(v, str) else v)
+    return df
+
+
+def _build_desc_ref(*frames: pd.DataFrame) -> pd.DataFrame:
+    """
+    Build a PRODUCTO+EMPRESA → descriptive-cols lookup.
+    First frame wins (AnalisisLote has priority over Stock).
+    """
+    parts = []
+    for df in frames:
+        avail = [c for c in MERGE_KEYS + _DESC_COLS if c in df.columns]
+        if avail and not df.empty:
+            parts.append(_strip_strings(df[avail].copy()).drop_duplicates(subset=MERGE_KEYS))
+    if not parts:
+        return pd.DataFrame(columns=MERGE_KEYS + _DESC_COLS)
+    return pd.concat(parts).drop_duplicates(subset=MERGE_KEYS, keep="first")
+
+
+def merge_services(stock: pd.DataFrame, analisis_lote: pd.DataFrame,
                    pendiente: pd.DataFrame) -> pd.DataFrame:
-    """Merge 3 DataFrames on MERGE_KEYS, rename qty columns, fill missing with 0."""
-    # Normalize product column in presupuestado
-    presup = _normalize_presup(presup)
+    # Strip leading/trailing spaces from string columns in all services
+    for df in [stock, analisis_lote, pendiente]:
+        if not df.empty:
+            _strip_strings(df)
 
-    # Rename qty columns to logical names before merge
-    s = stock.rename(columns={"CANTIDAD1": "stock_qty"}) if not stock.empty else pd.DataFrame(columns=MERGE_KEYS + ["stock_qty"])
-    p = presup.rename(columns={"CANTIDAD": "presupuestado_qty"}) if not presup.empty else pd.DataFrame(columns=MERGE_KEYS + ["presupuestado_qty"])
-    pe = pendiente.rename(columns={"PENDIENTERECEPCION": "pendiente_qty"}) if not pendiente.empty else pd.DataFrame(columns=MERGE_KEYS + ["pendiente_qty"])
+    # 1. Aggregate quantities by MERGE_KEYS (collapses multi-deposit rows in Stock)
+    s_qty  = _agg_qty(stock,     "CANTIDAD1",          "stock_qty")
+    pe_qty = _agg_qty(pendiente, "PENDIENTERECEPCION",  "pendiente_qty")
 
-    # Keep only merge keys + qty + useful context columns per service
-    def _keep(df, qty_col, extra_cols):
-        cols = [c for c in MERGE_KEYS + [qty_col] + extra_cols if c in df.columns]
-        return df[cols]
+    al_qty_cols = [c for c in MERGE_KEYS + ["planificado_qty", "ejecutado_qty"]
+                   if c in analisis_lote.columns] if not analisis_lote.empty else []
+    al_qty = analisis_lote[al_qty_cols] if al_qty_cols else pd.DataFrame(
+        columns=MERGE_KEYS + ["planificado_qty", "ejecutado_qty"])
 
-    s  = _keep(s,  "stock_qty",        ["DEPOSITO"])
-    p  = _keep(p,  "presupuestado_qty", ["DEPOSITO", "ANO-MES"])
-    pe = _keep(pe, "pendiente_qty",     ["SUCURSAL", "ANO-MES"])
+    # 2. Outer-merge quantities only
+    merged = al_qty.merge(s_qty,  on=MERGE_KEYS, how="outer")
+    merged = merged.merge(pe_qty, on=MERGE_KEYS, how="outer")
 
-    merged = s.merge(p, on=MERGE_KEYS, how="outer")
-    merged = merged.merge(pe, on=MERGE_KEYS, how="outer")
+    for col in ["stock_qty", "planificado_qty", "ejecutado_qty", "pendiente_qty"]:
+        merged[col] = merged.get(col, pd.Series(dtype=float)).astype(float).fillna(0.0)
 
-    for col in ["stock_qty", "presupuestado_qty", "pendiente_qty"]:
-        if col not in merged.columns:
-            merged[col] = 0.0
-        else:
-            merged[col] = merged[col].astype(float).fillna(0.0)
+    # 3. Enrich all rows with descriptive attributes (AnalisisLote > Stock > empty)
+    ref = _build_desc_ref(analisis_lote, stock)
+    merged = merged.merge(ref, on=MERGE_KEYS, how="left")
 
     return merged
 
 
-def add_cobertura(df: pd.DataFrame) -> pd.DataFrame:
-    """Add cobertura = stock_qty + pendiente_qty - presupuestado_qty."""
-    df = df.copy()
-    df["cobertura"] = df["stock_qty"] + df["pendiente_qty"] - df["presupuestado_qty"]
-    return df
+def build_proyeccion_temporal(
+    df_monthly: pd.DataFrame,
+    df_base: pd.DataFrame,
+    incluir_pendiente: bool,
+    filters: dict,
+) -> pd.DataFrame:
+    """
+    Devuelve un DataFrame con la proyección de stock acumulada por EMPRESA y ANO_MES.
+    df_monthly : datos mensuales de planificado/ejecutado por empresa (sin filtrar)
+    df_base    : datos merged ya filtrados (tiene stock_qty y pendiente_qty por producto)
+    filters    : dict campo → lista de valores seleccionados (mismos filtros de la grilla)
+    """
+    if df_monthly.empty or df_base.empty:
+        return pd.DataFrame()
 
+    # Aplicar los mismos filtros al dataset mensual
+    monthly = df_monthly.copy()
+    _strip_strings(monthly)
+    for field, selected in filters.items():
+        if selected and field in monthly.columns:
+            monthly = monthly[monthly[field].isin(selected)]
 
-def prepare_anio_mes(stock: pd.DataFrame, presup: pd.DataFrame,
-                     pendiente: pd.DataFrame) -> pd.DataFrame:
-    """Aggregate qty by ANO-MES and servicio for the bar chart. Stock has no date."""
-    presup = _normalize_presup(presup)
+    if monthly.empty:
+        return pd.DataFrame()
+
+    # Stock base por Unidad de Negocios (EMPRESA)
+    stock_dedup = (
+        df_base.drop_duplicates(subset=MERGE_KEYS)[["EMPRESA", "stock_qty", "pendiente_qty"]]
+    )
+    base = stock_dedup.groupby("EMPRESA").agg(
+        stock=("stock_qty", "sum"),
+        pendiente=("pendiente_qty", "sum"),
+    ).reset_index()
+    base["stock_base"] = base["stock"] + (base["pendiente"] if incluir_pendiente else 0)
+
+    # Neto mensual por empresa
+    monthly_grp = (
+        monthly.groupby(["EMPRESA", "ANO_MES"])
+        .agg(planificado_mes=("planificado_mes", "sum"),
+             ejecutado_mes=("ejecutado_mes", "sum"))
+        .reset_index()
+    )
+    monthly_grp["neto_mes"] = monthly_grp["planificado_mes"] - monthly_grp["ejecutado_mes"]
+
+    current_month = date.today().strftime("%Y-%m")
+    all_months = sorted(monthly_grp["ANO_MES"].unique())
+
+    # Proyección acumulada por empresa — cumsum sobre todos los meses, mostrar desde el actual
     frames = []
+    for empresa, grp in monthly_grp.groupby("EMPRESA"):
+        full = (
+            pd.DataFrame({"ANO_MES": all_months})
+            .merge(grp[["ANO_MES", "planificado_mes", "ejecutado_mes", "neto_mes"]],
+                   on="ANO_MES", how="left")
+            .fillna(0)
+            .sort_values("ANO_MES")
+        )
+        stock_base = base.loc[base["EMPRESA"] == empresa, "stock_base"].sum()
+        full["proyeccion"] = stock_base - full["neto_mes"].cumsum()
+        full["EMPRESA"] = empresa
+        frames.append(full[full["ANO_MES"] >= current_month])
 
-    for df, qty_col, label in [
-        (presup,    "CANTIDAD",           "Presupuestado"),
-        (pendiente, "PENDIENTERECEPCION", "Pendiente"),
-    ]:
-        if "ANO-MES" in df.columns and qty_col in df.columns:
-            tmp = df[["ANO-MES", qty_col]].copy()
-            tmp = tmp.rename(columns={qty_col: "cantidad"})
-            tmp["servicio"] = label
-            frames.append(tmp)
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
-    if not frames:
-        return pd.DataFrame(columns=["ANO-MES", "cantidad", "servicio"])
 
-    result = pd.concat(frames, ignore_index=True)
-    return result.groupby(["ANO-MES", "servicio"], as_index=False)["cantidad"].sum()
+def add_proyeccion(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df["proyeccion"] = df["stock_qty"] + df["pendiente_qty"] - (df["planificado_qty"] - df["ejecutado_qty"])
+    return df
