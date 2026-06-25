@@ -37,7 +37,7 @@ def _fmt(n: float) -> str:
     return f"{n:,.0f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-LOGO_SRC = _logo_b64("/Users/ezequielmartinez/Desktop/Grupo Duhau_AED_Economart_Color.jpg")
+LOGO_SRC = _logo_b64(Path(__file__).parent / "assets" / "logo.jpg")
 
 # ── CSS ────────────────────────────────────────────────────────────────────────
 st.markdown("""
