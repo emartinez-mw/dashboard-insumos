@@ -5,6 +5,8 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+st.set_page_config(page_title="Dashboard Insumos — Duhau", layout="wide")
+
 # Streamlit Cloud: volcar st.secrets en os.environ antes de importar config/db
 try:
     for _k, _v in st.secrets.items():
@@ -18,8 +20,6 @@ from api.services import fetch_stock, fetch_analisis_lote, fetch_analisis_lote_m
 from data.transform import merge_services, add_proyeccion, build_proyeccion_temporal
 
 pd.set_option("styler.render.max_elements", 5_000_000)
-
-st.set_page_config(page_title="Dashboard Insumos — Duhau", layout="wide")
 
 
 def _logo_b64(path: str) -> str:
