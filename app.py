@@ -1,8 +1,18 @@
 from datetime import datetime
 import base64
+import os
 from pathlib import Path
 import pandas as pd
 import streamlit as st
+
+# Streamlit Cloud: volcar st.secrets en os.environ antes de importar config/db
+try:
+    for _k, _v in st.secrets.items():
+        if isinstance(_v, str) and _k not in os.environ:
+            os.environ[_k] = _v
+except Exception:
+    pass
+
 import plotly.express as px
 from api.services import fetch_stock, fetch_analisis_lote, fetch_analisis_lote_monthly, fetch_pendiente
 from data.transform import merge_services, add_proyeccion, build_proyeccion_temporal
