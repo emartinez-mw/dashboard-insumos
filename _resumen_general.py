@@ -292,9 +292,10 @@ col_labels = {
 }
 
 table_df = filtered[display_cols].copy().rename(columns=col_labels)
-table_df = table_df.fillna("")
 NUM_COLS = ["Stock Actual", "Planificado", "Ejecutado", "Pendiente Recepción", "Proyección"]
 num_cols_present = [c for c in NUM_COLS if c in table_df.columns]
+text_cols = [c for c in table_df.columns if c not in num_cols_present]
+table_df[text_cols] = table_df[text_cols].fillna("")
 
 proy_filter = st.radio(
     "Mostrar",
@@ -319,10 +320,10 @@ def color_proyeccion(val):
 
 st.dataframe(
     table_df.style
-        .format("{:,.2f}", subset=num_cols_present)
+        .format("{:,.2f}", subset=num_cols_present, na_rep="")
         .map(color_proyeccion, subset=["Proyección"] if "Proyección" in table_df.columns else [])
         .set_properties(**{"font-family": "Work Sans, sans-serif", "font-size": "13px"}),
-    use_container_width=True,
+    width="stretch",
     hide_index=True,
 )
 
@@ -384,7 +385,7 @@ else:
         hovermode="x unified",
     )
     fig.update_traces(line_width=2, marker_size=6)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 # ── DATOS CRUDOS ──────────────────────────────────────────────────────────────
 st.markdown('<div class="duhau-section"><div class="duhau-bar"></div><span class="duhau-lbl">Detalle por Servicio</span></div>', unsafe_allow_html=True)

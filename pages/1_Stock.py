@@ -88,6 +88,5 @@ with col_btn:
         data=buffer.getvalue(),
         file_name="stock.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True,
     )
-st.dataframe(cascade_df, use_container_width=True, hide_index=True)
+st.dataframe(cascade_df, width="stretch", hide_index=True)
