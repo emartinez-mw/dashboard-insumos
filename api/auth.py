@@ -13,7 +13,7 @@ def get_token() -> str:
         "grant_type": "client_credentials",
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
-    }, timeout=30)
+    }, timeout=15)
     response.raise_for_status()
     # API devuelve el token como texto plano (UUID), no como JSON
     _token_cache["token"] = response.text.strip()
