@@ -69,15 +69,17 @@ def fetch_analisis_lote_monthly_db() -> pd.DataFrame:
               "PRINCIPIOACTIVO", "CENTROLOGISTICO", "ANO_MES",
               "planificado_mes", "ejecutado_mes"]
     try:
-        with _conn() as conn:
-            with conn.cursor() as cur:
-                cur.execute(_QUERY_MONTHLY)
-                cols = [desc[0] for desc in cur.description]
-                df = pd.DataFrame(cur.fetchall(), columns=cols)
-                for col in ["planificado_mes", "ejecutado_mes"]:
-                    if col in df.columns:
-                        df[col] = df[col].astype(float)
-                return df
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(_QUERY_MONTHLY)
+        cols = [desc[0] for desc in cur.description]
+        df = pd.DataFrame(cur.fetchall(), columns=cols)
+        cur.close()
+        conn.close()
+        for col in ["planificado_mes", "ejecutado_mes"]:
+            if col in df.columns:
+                df[col] = df[col].astype(float)
+        return df
     except Exception as e:
         print(f"[db] Error en query mensual: {e}")
         return pd.DataFrame(columns=_EMPTY)
@@ -91,11 +93,14 @@ def fetch_analisis_lote_db() -> pd.DataFrame:
         "planificado_qty", "ejecutado_qty",
     ]
     try:
-        with _conn() as conn:
-            with conn.cursor() as cur:
-                cur.execute(_QUERY)
-                cols = [desc[0] for desc in cur.description]
-                return pd.DataFrame(cur.fetchall(), columns=cols)
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(_QUERY)
+        cols = [desc[0] for desc in cur.description]
+        result = pd.DataFrame(cur.fetchall(), columns=cols)
+        cur.close()
+        conn.close()
+        return result
     except Exception as e:
         print(f"[db] Error conectando a PostgreSQL: {e}")
         return pd.DataFrame(columns=_EMPTY_COLS)
