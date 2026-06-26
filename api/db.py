@@ -37,6 +37,7 @@ def _conn():
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         port=int(os.getenv("DB_PORT", 5432)),
+        timeout=15,
     )
 
 
