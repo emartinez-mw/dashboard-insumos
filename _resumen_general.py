@@ -49,7 +49,7 @@ st.markdown("""
 
 [data-testid="stAppViewContainer"] { background-color: #f7f9f4; }
 [data-testid="stHeader"]           { background-color: #f7f9f4; }
-section[data-testid="stMain"] > div { padding-top: 0; }
+section[data-testid="stMain"] > div { padding-top: 1rem; }
 
 /* Fuente base */
 html, body, [class*="css"] {
