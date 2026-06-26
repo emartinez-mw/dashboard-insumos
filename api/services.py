@@ -16,7 +16,7 @@ _ANALISIS_LOTE_GROUP_COLS = [
 def _fetch(url: str, params: dict) -> pd.DataFrame:
     token = get_token()
     all_params = {"ACCESS_TOKEN": token, **params}
-    response = requests.get(url, params=all_params)
+    response = requests.get(url, params=all_params, timeout=30)
     response.raise_for_status()
     payload = response.json()
     data = payload if isinstance(payload, list) else payload.get("data", [])
