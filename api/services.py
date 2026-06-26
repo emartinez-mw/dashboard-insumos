@@ -37,6 +37,11 @@ def fetch_analisis_lote_monthly() -> pd.DataFrame:
     return fetch_analisis_lote_monthly_db()
 
 
+def fetch_analisis_lote_raw() -> pd.DataFrame:
+    from api.db import fetch_analisis_lote_raw_db
+    return fetch_analisis_lote_raw_db()
+
+
 def fetch_pendiente() -> pd.DataFrame:
     today = date.today().strftime("%Y-%m-%d")
     params = {**PENDIENTE_FIXED_PARAMS, "PARAMWEBREPORT_FechaHasta": today}

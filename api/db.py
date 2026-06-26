@@ -85,6 +85,49 @@ def fetch_analisis_lote_monthly_db() -> pd.DataFrame:
         return pd.DataFrame(columns=_EMPTY)
 
 
+_QUERY_RAW = f"""
+SELECT
+    laborproducto                AS "PRODUCTO",
+    empresa                      AS "EMPRESA",
+    empresapadre                 AS "EMPRESAPADRE",
+    familia                      AS "FAMILIA",
+    subfamilia                   AS "SUBFAMILIA",
+    principioactivo              AS "PRINCIPIOACTIVO",
+    formulacion                  AS "FORMULACION",
+    centrologistico              AS "CENTROLOGISTICO",
+    estado                       AS "ESTADO",
+    SUM(cantidad::numeric)       AS "CANTIDAD"
+FROM {_TABLE}
+WHERE tipo     = '02 - Insumo'
+  AND campania  = '26-27 Campaña'
+  AND estado   != 'Ordenado'
+GROUP BY
+    laborproducto, empresa, empresapadre,
+    familia, subfamilia, principioactivo,
+    formulacion, centrologistico, estado
+ORDER BY empresa, laborproducto, estado
+"""
+
+
+def fetch_analisis_lote_raw_db() -> pd.DataFrame:
+    _EMPTY = ["PRODUCTO", "EMPRESA", "EMPRESAPADRE", "FAMILIA", "SUBFAMILIA",
+              "PRINCIPIOACTIVO", "FORMULACION", "CENTROLOGISTICO", "ESTADO", "CANTIDAD"]
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(_QUERY_RAW)
+        cols = [desc[0] for desc in cur.description]
+        df = pd.DataFrame(cur.fetchall(), columns=cols)
+        cur.close()
+        conn.close()
+        if "CANTIDAD" in df.columns:
+            df["CANTIDAD"] = df["CANTIDAD"].astype(float)
+        return df
+    except Exception as e:
+        print(f"[db] Error en query raw: {e}")
+        return pd.DataFrame(columns=_EMPTY)
+
+
 def fetch_analisis_lote_db() -> pd.DataFrame:
     _EMPTY_COLS = [
         "PRODUCTO", "EMPRESA", "EMPRESAPADRE",

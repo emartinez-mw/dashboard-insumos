@@ -2,6 +2,11 @@ from datetime import date
 import pandas as pd
 from config import MERGE_KEYS
 
+_ZONA_MAP = {
+    "(AED) Pampa Chaco": "NEA",
+    "(ECO) NEA": "NEA",
+}
+
 _DESC_COLS = [
     "EMPRESAPADRE", "FAMILIA", "SUBFAMILIA",
     "PRINCIPIOACTIVO", "FORMULACION", "CENTROLOGISTICO",
@@ -133,6 +138,12 @@ def build_proyeccion_temporal(
         frames.append(full[full["ANO_MES"] >= current_month])
 
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+
+def add_zona(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df["ZONA"] = df["EMPRESA"].map(_ZONA_MAP).fillna("Zona Templada")
+    return df
 
 
 def add_proyeccion(df: pd.DataFrame) -> pd.DataFrame:
