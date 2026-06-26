@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-import psycopg2
+import pg8000.dbapi
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -31,13 +31,12 @@ GROUP BY
 
 
 def _conn():
-    return psycopg2.connect(
+    return pg8000.dbapi.connect(
         host=os.getenv("DB_HOST"),
-        dbname=os.getenv("DB_NAME"),
+        database=os.getenv("DB_NAME"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         port=int(os.getenv("DB_PORT", 5432)),
-        connect_timeout=15,
     )
 
 
