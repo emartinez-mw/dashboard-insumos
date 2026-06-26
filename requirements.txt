@@ -4,3 +4,4 @@ requests
 plotly
 python-dotenv
 pg8000
+openpyxl

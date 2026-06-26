@@ -1,3 +1,4 @@
+import io
 import os
 import json
 import streamlit as st
@@ -88,5 +89,17 @@ if "ESTADO" in df.columns:
     if st.session_state["al_filter_ESTADO"]:
         cascade_df = cascade_df[cascade_df["ESTADO"].isin(st.session_state["al_filter_ESTADO"])]
 
-st.markdown(f"**{len(cascade_df):,} registros**")
+col_info, col_btn = st.columns([8, 2])
+with col_info:
+    st.markdown(f"**{len(cascade_df):,} registros**")
+with col_btn:
+    buffer = io.BytesIO()
+    cascade_df.to_excel(buffer, index=False, engine="openpyxl")
+    st.download_button(
+        "⬇️ Descargar Excel",
+        data=buffer.getvalue(),
+        file_name="analisis_lotes.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True,
+    )
 st.dataframe(cascade_df, use_container_width=True, hide_index=True)

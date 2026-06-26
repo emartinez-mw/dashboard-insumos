@@ -1,3 +1,4 @@
+import io
 import os
 import json
 import streamlit as st
@@ -76,5 +77,17 @@ for row_fields in [FILTER_CHAIN[:4], FILTER_CHAIN[4:]]:
         if field in df.columns and st.session_state.get(f"s_filter_{field}"):
             cascade_df = cascade_df[cascade_df[field].isin(st.session_state[f"s_filter_{field}"])]
 
-st.markdown(f"**{len(cascade_df):,} registros**")
+col_info, col_btn = st.columns([8, 2])
+with col_info:
+    st.markdown(f"**{len(cascade_df):,} registros**")
+with col_btn:
+    buffer = io.BytesIO()
+    cascade_df.to_excel(buffer, index=False, engine="openpyxl")
+    st.download_button(
+        "⬇️ Descargar Excel",
+        data=buffer.getvalue(),
+        file_name="stock.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True,
+    )
 st.dataframe(cascade_df, use_container_width=True, hide_index=True)

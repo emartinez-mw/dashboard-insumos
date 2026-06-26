@@ -86,25 +86,11 @@ def fetch_analisis_lote_monthly_db() -> pd.DataFrame:
 
 
 _QUERY_RAW = f"""
-SELECT
-    laborproducto                AS "PRODUCTO",
-    empresa                      AS "EMPRESA",
-    empresapadre                 AS "EMPRESAPADRE",
-    familia                      AS "FAMILIA",
-    subfamilia                   AS "SUBFAMILIA",
-    principioactivo              AS "PRINCIPIOACTIVO",
-    formulacion                  AS "FORMULACION",
-    centrologistico              AS "CENTROLOGISTICO",
-    estado                       AS "ESTADO",
-    SUM(cantidad::numeric)       AS "CANTIDAD"
+SELECT *
 FROM {_TABLE}
 WHERE tipo     = '02 - Insumo'
   AND campania  = '26-27 Campaña'
   AND estado   != 'Ordenado'
-GROUP BY
-    laborproducto, empresa, empresapadre,
-    familia, subfamilia, principioactivo,
-    formulacion, centrologistico, estado
 ORDER BY empresa, laborproducto, estado
 """
 
@@ -116,12 +102,14 @@ def fetch_analisis_lote_raw_db() -> pd.DataFrame:
         conn = _conn()
         cur = conn.cursor()
         cur.execute(_QUERY_RAW)
-        cols = [desc[0] for desc in cur.description]
+        cols = [desc[0].upper() for desc in cur.description]
         df = pd.DataFrame(cur.fetchall(), columns=cols)
         cur.close()
         conn.close()
+        if "LABORPRODUCTO" in df.columns:
+            df = df.rename(columns={"LABORPRODUCTO": "PRODUCTO"})
         if "CANTIDAD" in df.columns:
-            df["CANTIDAD"] = df["CANTIDAD"].astype(float)
+            df["CANTIDAD"] = pd.to_numeric(df["CANTIDAD"], errors="coerce")
         return df
     except Exception as e:
         print(f"[db] Error en query raw: {e}")
