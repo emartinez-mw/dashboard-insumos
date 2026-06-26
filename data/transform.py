@@ -58,8 +58,10 @@ def merge_services(stock: pd.DataFrame, analisis_lote: pd.DataFrame,
 
     al_qty_cols = [c for c in MERGE_KEYS + ["planificado_qty", "ejecutado_qty"]
                    if c in analisis_lote.columns] if not analisis_lote.empty else []
-    al_qty = analisis_lote[al_qty_cols] if al_qty_cols else pd.DataFrame(
-        columns=MERGE_KEYS + ["planificado_qty", "ejecutado_qty"])
+    al_qty = (
+        analisis_lote[al_qty_cols].groupby(MERGE_KEYS, as_index=False).sum()
+        if al_qty_cols else pd.DataFrame(columns=MERGE_KEYS + ["planificado_qty", "ejecutado_qty"])
+    )
 
     # 2. Outer-merge quantities only
     merged = al_qty.merge(s_qty,  on=MERGE_KEYS, how="outer")
