@@ -210,10 +210,14 @@ filters = {field: st.session_state.get(f"filter_{field}", []) for field, _ in FI
 filtered = cascade_df
 
 # ── KPI STRIP ─────────────────────────────────────────────────────────────────
-stock_total    = filtered["stock_qty"].sum()
+stock_total     = filtered["stock_qty"].sum()
 pendiente_total = filtered["pendiente_qty"].sum()
-proy_ok  = int((filtered["proyeccion"] >= 0).sum()) if "proyeccion" in filtered.columns else 0
-proy_def = int((filtered["proyeccion"] < 0).sum())  if "proyeccion" in filtered.columns else 0
+dif_plan_ejec   = filtered["planificado_qty"].sum() - filtered["ejecutado_qty"].sum()
+proy_total      = filtered["proyeccion"].sum() if "proyeccion" in filtered.columns else 0.0
+
+proy_color = "#1a6b3a" if proy_total >= 0 else "#dc2626"
+proy_bg    = "#dcfce7" if proy_total >= 0 else "#fee2e2"
+proy_label = "▲ Positiva" if proy_total >= 0 else "▼ Negativa"
 
 st.markdown('<div class="duhau-section" style="margin-top:28px"><div class="duhau-bar"></div><span class="duhau-lbl">Resumen</span></div>', unsafe_allow_html=True)
 
@@ -241,25 +245,22 @@ st.markdown(f"""
 
   <div style="padding:28px 28px 24px;border-right:1px solid #e5e7eb;background:#fff">
     <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
-                color:#9ca3af;margin-bottom:12px;font-family:'Work Sans',sans-serif">Productos — Superávit</div>
+                color:#9ca3af;margin-bottom:12px;font-family:'Work Sans',sans-serif">Dif. Planificado / Ejecutado</div>
     <div style="font-family:'Libre Baskerville',serif;font-size:40px;font-weight:700;
-                color:#1a6b3a;line-height:1">{proy_ok}</div>
-    <div style="display:inline-flex;align-items:center;gap:4px;margin-top:10px;
-                font-size:11px;font-weight:700;padding:3px 10px;border-radius:3px;
-                background:#dcfce7;color:#1a6b3a;font-family:'Work Sans',sans-serif">
-      ▲ Proyección positiva
-    </div>
+                color:#111;line-height:1">{_fmt(dif_plan_ejec)}</div>
+    <div style="font-size:13px;font-weight:600;color:#9ca3af;margin-top:6px;
+                font-family:'Work Sans',sans-serif">Kg/Lit</div>
   </div>
 
   <div style="padding:28px 28px 24px;background:#fff">
     <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
-                color:#9ca3af;margin-bottom:12px;font-family:'Work Sans',sans-serif">Productos — Déficit</div>
+                color:#9ca3af;margin-bottom:12px;font-family:'Work Sans',sans-serif">Proyección Total</div>
     <div style="font-family:'Libre Baskerville',serif;font-size:40px;font-weight:700;
-                color:#dc2626;line-height:1">{proy_def}</div>
+                color:{proy_color};line-height:1">{_fmt(proy_total)}</div>
     <div style="display:inline-flex;align-items:center;gap:4px;margin-top:10px;
                 font-size:11px;font-weight:700;padding:3px 10px;border-radius:3px;
-                background:#fee2e2;color:#b91c1c;font-family:'Work Sans',sans-serif">
-      ▼ Proyección negativa
+                background:{proy_bg};color:{proy_color};font-family:'Work Sans',sans-serif">
+      {proy_label}
     </div>
   </div>
 
