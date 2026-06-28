@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 from api.services import fetch_stock, fetch_analisis_lote, fetch_pendiente
 
 
-def _mock_empty(url, params=None):
+def _mock_empty(url, params=None, **kwargs):
     mock = MagicMock()
     mock.json.return_value = []
     mock.raise_for_status.return_value = None

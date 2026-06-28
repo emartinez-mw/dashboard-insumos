@@ -26,7 +26,8 @@ def test_get_token_success():
             "grant_type": "client_credentials",
             "client_id": CLIENT_ID,
             "client_secret": CLIENT_SECRET,
-        }
+        },
+        timeout=15,
     )
 
 
