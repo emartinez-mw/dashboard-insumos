@@ -2,6 +2,11 @@ import streamlit as st
 
 from access_control import require_login
 
+st.write("DEBUG top-level secrets keys:", list(st.secrets.keys()))
+if "auth" in st.secrets:
+    st.write("DEBUG auth section keys:", list(st.secrets["auth"].keys()))
+st.stop()
+
 require_login()
 
 pg = st.navigation(
