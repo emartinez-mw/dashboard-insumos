@@ -22,7 +22,8 @@ def require_login() -> None:
         st.button("Iniciar sesión con Google", on_click=st.login)
         st.stop()
 
-    if not is_allowed_domain(st.user.email):
+    user_email = st.user.email or ""
+    if not is_allowed_domain(user_email):
         st.error("Tu cuenta no pertenece al dominio autorizado (@admin.com.ar).")
         st.button("Cerrar sesión", on_click=st.logout, key="logout_wrong_domain")
         st.stop()
@@ -31,6 +32,7 @@ def require_login() -> None:
     last_activity = st.session_state.get("last_activity")
     if last_activity is not None and is_session_expired(last_activity, now):
         st.warning("Sesión expirada por inactividad. Volvé a iniciar sesión.")
+        st.session_state.pop("last_activity", None)
         st.logout()
         st.stop()
 
