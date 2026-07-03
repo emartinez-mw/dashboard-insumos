@@ -1,5 +1,9 @@
 import streamlit as st
 
+from access_control import require_login
+
+require_login()
+
 pg = st.navigation(
     [
         st.Page("_resumen_general.py",          title="Resumen General"),
