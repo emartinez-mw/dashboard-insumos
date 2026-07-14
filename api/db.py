@@ -1,4 +1,5 @@
 import os
+from typing import Optional, Tuple
 import pandas as pd
 import pg8000.dbapi
 from dotenv import load_dotenv
@@ -28,6 +29,16 @@ GROUP BY
     familia, subfamilia, principioactivo,
     formulacion, centrologistico
 """
+
+
+def _build_analisis_lote_query(fecha_corte: Optional[str] = None) -> Tuple[str, Tuple]:
+    if fecha_corte:
+        query = _QUERY.replace(
+            "WHEN estado = 'Planificado' THEN",
+            "WHEN estado = 'Planificado' AND fecha::date <= %s THEN",
+        )
+        return query, (fecha_corte,)
+    return _QUERY, ()
 
 
 def _conn():
@@ -116,17 +127,18 @@ def fetch_analisis_lote_raw_db() -> pd.DataFrame:
         return pd.DataFrame(columns=_EMPTY)
 
 
-def fetch_analisis_lote_db() -> pd.DataFrame:
+def fetch_analisis_lote_db(fecha_corte: Optional[str] = None) -> pd.DataFrame:
     _EMPTY_COLS = [
         "PRODUCTO", "EMPRESA", "EMPRESAPADRE",
         "FAMILIA", "SUBFAMILIA", "PRINCIPIOACTIVO",
         "FORMULACION", "CENTROLOGISTICO",
         "planificado_qty", "ejecutado_qty",
     ]
+    query, params = _build_analisis_lote_query(fecha_corte)
     try:
         conn = _conn()
         cur = conn.cursor()
-        cur.execute(_QUERY)
+        cur.execute(query, params)
         cols = [desc[0] for desc in cur.description]
         result = pd.DataFrame(cur.fetchall(), columns=cols)
         cur.close()
