@@ -35,6 +35,12 @@ def test_fetch_analisis_lote_returns_dataframe_from_db():
     assert df["planificado_qty"].iloc[0] == 100.0
 
 
+def test_fetch_analisis_lote_pasa_fecha_corte_a_la_db():
+    with patch("api.db.fetch_analisis_lote_db", return_value=pd.DataFrame()) as mock_db:
+        fetch_analisis_lote(fecha_corte="2026-08-15")
+    mock_db.assert_called_once_with("2026-08-15")
+
+
 def test_fetch_pendiente_uses_today_as_hasta():
     today = date.today().strftime("%Y-%m-%d")
     with patch("api.services.requests.get", side_effect=_mock_empty) as mock_get:

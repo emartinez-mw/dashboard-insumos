@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Optional
 import requests
 import pandas as pd
 from api.auth import get_token
@@ -27,9 +28,9 @@ def fetch_stock() -> pd.DataFrame:
     return _fetch(STOCK_URL, STOCK_FIXED_PARAMS)
 
 
-def fetch_analisis_lote() -> pd.DataFrame:
+def fetch_analisis_lote(fecha_corte: Optional[str] = None) -> pd.DataFrame:
     from api.db import fetch_analisis_lote_db
-    return fetch_analisis_lote_db()
+    return fetch_analisis_lote_db(fecha_corte)
 
 
 def fetch_analisis_lote_monthly() -> pd.DataFrame:
