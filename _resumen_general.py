@@ -1,5 +1,6 @@
 from datetime import datetime
 import base64
+import io
 import json
 import os
 import urllib.parse
@@ -308,6 +309,17 @@ if proy_filter == "Solo déficit (negativo)":
     table_df = table_df[filtered["proyeccion"].lt(0).values]
 elif proy_filter == "Solo superávit (≥ 0)":
     table_df = table_df[filtered["proyeccion"].ge(0).values]
+
+_, col_btn = st.columns([8, 2])
+with col_btn:
+    buffer = io.BytesIO()
+    table_df.to_excel(buffer, index=False, engine="openpyxl")
+    st.download_button(
+        "⬇️ Descargar Excel",
+        data=buffer.getvalue(),
+        file_name="analisis_cruzado.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 def color_proyeccion(val):
