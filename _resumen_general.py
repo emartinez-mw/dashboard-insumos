@@ -5,6 +5,7 @@ import json
 import os
 import urllib.parse
 from pathlib import Path
+from typing import Optional
 import pandas as pd
 import streamlit as st
 
@@ -144,15 +145,26 @@ st.markdown(f"""
 
 # ── CARGA DE DATOS ─────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner="Cargando datos desde Finnegans...")
-def load_data():
-    stock         = fetch_stock()
-    analisis_lote = fetch_analisis_lote()
-    pendiente     = fetch_pendiente()
-    monthly       = fetch_analisis_lote_monthly()
-    merged        = merge_services(stock, analisis_lote, pendiente)
-    merged        = add_zona(merged)
-    merged        = add_proyeccion(merged)
-    return merged, monthly
+def load_base_data():
+    stock     = fetch_stock()
+    pendiente = fetch_pendiente()
+    monthly   = fetch_analisis_lote_monthly()
+    return stock, pendiente, monthly
+
+
+@st.cache_data(show_spinner="Calculando planificado...")
+def load_analisis_lote(fecha_corte: Optional[str]):
+    return fetch_analisis_lote(fecha_corte)
+
+
+def build_filtered(stock, analisis_lote_df, pendiente, filters):
+    merged = merge_services(stock, analisis_lote_df, pendiente)
+    merged = add_zona(merged)
+    merged = add_proyeccion(merged)
+    for field, selected in filters.items():
+        if selected and field in merged.columns:
+            merged = merged[merged[field].isin(selected)]
+    return merged
 
 
 col_ref, _ = st.columns([1, 11])
@@ -162,7 +174,8 @@ with col_ref:
         st.rerun()
 
 try:
-    df, df_monthly = load_data()
+    stock, pendiente, df_monthly = load_base_data()
+    df = build_filtered(stock, load_analisis_lote(None), pendiente, {})
 except Exception as e:
     st.error(f"Error al cargar datos: {e}")
     st.stop()
@@ -208,7 +221,7 @@ for row_fields in [FILTER_CHAIN[:4], FILTER_CHAIN[4:]]:
             cascade_df = cascade_df[cascade_df[field].isin(st.session_state[f"filter_{field}"])]
 
 filters = {field: st.session_state.get(f"filter_{field}", []) for field, _ in FILTER_CHAIN}
-filtered = cascade_df
+filtered = build_filtered(stock, load_analisis_lote(None), pendiente, filters)
 
 # ── KPI STRIP ─────────────────────────────────────────────────────────────────
 stock_total     = filtered["stock_qty"].sum()
