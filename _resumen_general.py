@@ -449,6 +449,33 @@ else:
         margin=dict(t=20, b=20),
         hovermode="x unified",
     )
+    for label, fecha in [("Corte 1", fecha1), ("Corte 2", fecha2), ("Corte 3", fecha3)]:
+        if fecha:
+            proy_en_fecha = build_filtered(
+                stock, load_analisis_lote(fecha.isoformat()), pendiente, filters
+            )["proyeccion"].sum()
+            mes_corte = fecha.strftime("%Y-%m")
+            # NOTA: fig.add_vline(..., annotation_text=..., annotation_position=...)
+            # crashea con TypeError en plotly 5.22.0 cuando x es un string (nuestro
+            # eje ANO_MES es categórico "YYYY-MM", no fecha nativa): la lógica interna
+            # de posicionamiento de anotación de plotly calcula sum(X)/len(X) sobre
+            # los x0/x1 del shape sin chequear el tipo, lo cual rompe con strings.
+            # Se separa la línea (add_vline, sin kwargs de anotación) de la anotación
+            # (add_annotation) para lograr el mismo resultado visual sin el bug.
+            fig.add_vline(
+                x=mes_corte,
+                line_dash="dot",
+                line_color="#1a3a2a",
+            )
+            fig.add_annotation(
+                x=mes_corte,
+                y=1,
+                yref="y domain",
+                yanchor="bottom",
+                showarrow=False,
+                text=f"{label}: {_fmt(proy_en_fecha)}",
+            )
+
     fig.update_traces(line_width=2, marker_size=6)
     st.plotly_chart(fig, width="stretch")
 
