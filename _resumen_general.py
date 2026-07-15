@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 import base64
 import io
 import json
@@ -221,7 +221,46 @@ for row_fields in [FILTER_CHAIN[:4], FILTER_CHAIN[4:]]:
             cascade_df = cascade_df[cascade_df[field].isin(st.session_state[f"filter_{field}"])]
 
 filters = {field: st.session_state.get(f"filter_{field}", []) for field, _ in FILTER_CHAIN}
-filtered = build_filtered(stock, load_analisis_lote(None), pendiente, filters)
+
+# ── FECHAS DE CORTE — PLANIFICADO ───────────────────────────────────────────────
+st.markdown('<div class="duhau-section"><div class="duhau-bar"></div><span class="duhau-lbl">Fechas de Corte — Planificado</span></div>', unsafe_allow_html=True)
+
+hoy = date.today()
+
+
+def _clear_downstream_fechas(idx: int) -> None:
+    keys = ["corte_fecha1", "corte_fecha2", "corte_fecha3"]
+    for k in keys[idx + 1:]:
+        st.session_state[k] = None
+
+
+col_f1, col_f2, col_f3 = st.columns(3)
+with col_f1:
+    fecha1 = st.date_input("Fecha de Corte 1", value=None, min_value=hoy,
+                           key="corte_fecha1", on_change=_clear_downstream_fechas, args=(0,))
+with col_f2:
+    fecha2 = st.date_input("Fecha de Corte 2", value=None, min_value=fecha1 or hoy,
+                           key="corte_fecha2", on_change=_clear_downstream_fechas, args=(1,))
+with col_f3:
+    fecha3 = st.date_input("Fecha de Corte 3", value=None, min_value=fecha2 or fecha1 or hoy,
+                           key="corte_fecha3")
+
+opciones_corte = ["Sin corte"]
+mapa_corte = {"Sin corte": None}
+for label, fecha in [("Corte 1", fecha1), ("Corte 2", fecha2), ("Corte 3", fecha3)]:
+    if fecha:
+        texto = f"{label} ({fecha:%d/%m})"
+        opciones_corte.append(texto)
+        mapa_corte[texto] = fecha
+
+if st.session_state.get("corte_activo") not in opciones_corte:
+    st.session_state["corte_activo"] = "Sin corte"
+
+corte_seleccionado = st.segmented_control("Corte de análisis", opciones_corte, key="corte_activo")
+fecha_corte_activa = mapa_corte.get(corte_seleccionado)
+fecha_corte_activa_iso = fecha_corte_activa.isoformat() if fecha_corte_activa else None
+
+filtered = build_filtered(stock, load_analisis_lote(fecha_corte_activa_iso), pendiente, filters)
 
 # ── KPI STRIP ─────────────────────────────────────────────────────────────────
 stock_total     = filtered["stock_qty"].sum()
