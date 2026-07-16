@@ -20,8 +20,14 @@ except Exception:
     pass
 
 import plotly.express as px
-from api.services import fetch_stock, fetch_analisis_lote, fetch_analisis_lote_monthly, fetch_pendiente
-from data.transform import merge_services, add_proyeccion, add_zona, build_proyeccion_temporal
+from api.services import (
+    fetch_stock, fetch_analisis_lote, fetch_analisis_lote_monthly, fetch_pendiente,
+    fetch_producto_id_map, fetch_relacion_principio_activo,
+)
+from data.transform import (
+    merge_services, add_proyeccion, add_zona, build_proyeccion_temporal,
+    add_factor_principio_activo, apply_factor_principio_activo,
+)
 
 pd.set_option("styler.render.max_elements", 5_000_000)
 
@@ -157,6 +163,11 @@ def load_analisis_lote(fecha_corte: Optional[str]):
     return fetch_analisis_lote(fecha_corte)
 
 
+@st.cache_data(show_spinner="Cargando factor de principio activo...")
+def load_factor_principio_activo():
+    return fetch_producto_id_map(), fetch_relacion_principio_activo()
+
+
 def build_filtered(stock, analisis_lote_df, pendiente, filters):
     merged = merge_services(stock, analisis_lote_df, pendiente)
     merged = add_zona(merged)
@@ -261,6 +272,20 @@ fecha_corte_activa = mapa_corte.get(corte_seleccionado)
 fecha_corte_activa_iso = fecha_corte_activa.isoformat() if fecha_corte_activa else None
 
 filtered = build_filtered(stock, load_analisis_lote(fecha_corte_activa_iso), pendiente, filters)
+
+# ── FACTOR RELACIÓN PRINCIPIO ACTIVO ────────────────────────────────────────────
+id_map, factor_map = load_factor_principio_activo()
+filtered = add_factor_principio_activo(filtered, id_map, factor_map)
+df_monthly = add_factor_principio_activo(df_monthly, id_map, factor_map)
+
+ver_factor_pa = st.toggle("Ver Relación Principio Activo", value=False)
+
+if ver_factor_pa:
+    filtered = apply_factor_principio_activo(
+        filtered, ["stock_qty", "planificado_qty", "ejecutado_qty", "pendiente_qty"]
+    )
+    filtered = add_proyeccion(filtered)
+    df_monthly = apply_factor_principio_activo(df_monthly, ["planificado_mes", "ejecutado_mes"])
 
 # ── KPI STRIP ─────────────────────────────────────────────────────────────────
 stock_total     = filtered["stock_qty"].sum()
