@@ -2,7 +2,10 @@ import pytest
 import pandas as pd
 from datetime import date
 from unittest.mock import patch, MagicMock
-from api.services import fetch_stock, fetch_analisis_lote, fetch_pendiente, fetch_producto_id_map
+from api.services import (
+    fetch_stock, fetch_analisis_lote, fetch_pendiente,
+    fetch_producto_id_map, fetch_relacion_principio_activo,
+)
 
 
 def _mock_empty(url, params=None, **kwargs):
@@ -65,3 +68,11 @@ def test_fetch_producto_id_map_returns_dataframe_from_db():
         df = fetch_producto_id_map()
     assert "PRODUCTOID" in df.columns
     assert df["PRODUCTOID"].iloc[0] == "123"
+
+
+def test_fetch_relacion_principio_activo_returns_dataframe_from_db():
+    sample = pd.DataFrame([{"PRODUCTOID": "123", "FACTOR_PA_RAW": "0.61"}])
+    with patch("api.db.fetch_relacion_principio_activo_db", return_value=sample):
+        df = fetch_relacion_principio_activo()
+    assert "FACTOR_PA_RAW" in df.columns
+    assert df["FACTOR_PA_RAW"].iloc[0] == "0.61"

@@ -52,3 +52,8 @@ def fetch_pendiente() -> pd.DataFrame:
 def fetch_producto_id_map() -> pd.DataFrame:
     from api.db import fetch_producto_id_map_db
     return fetch_producto_id_map_db()
+
+
+def fetch_relacion_principio_activo() -> pd.DataFrame:
+    from api.db import fetch_relacion_principio_activo_db
+    return fetch_relacion_principio_activo_db()

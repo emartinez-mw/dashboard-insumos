@@ -174,3 +174,27 @@ def fetch_producto_id_map_db() -> pd.DataFrame:
     except Exception as e:
         print(f"[db] Error obteniendo mapa de ProductoID: {e}")
         return pd.DataFrame(columns=_EMPTY)
+
+
+_QUERY_RELACION_PRINCIPIO_ACTIVO = """
+SELECT
+    productoid               AS "PRODUCTOID",
+    relacionprincipioactivo  AS "FACTOR_PA_RAW"
+FROM duhau_dw_productos_duhau
+"""
+
+
+def fetch_relacion_principio_activo_db() -> pd.DataFrame:
+    _EMPTY = ["PRODUCTOID", "FACTOR_PA_RAW"]
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(_QUERY_RELACION_PRINCIPIO_ACTIVO)
+        cols = [desc[0] for desc in cur.description]
+        result = pd.DataFrame(cur.fetchall(), columns=cols)
+        cur.close()
+        conn.close()
+        return result
+    except Exception as e:
+        print(f"[db] Error obteniendo relación principio activo: {e}")
+        return pd.DataFrame(columns=_EMPTY)
