@@ -166,3 +166,12 @@ def add_factor_principio_activo(df: pd.DataFrame, id_map: pd.DataFrame,
     factor = pd.to_numeric(df["FACTOR_PA_RAW"], errors="coerce")
     df["factor_pa"] = factor.fillna(1.0).replace(0, 1.0)
     return df.drop(columns=["FACTOR_PA_RAW"])
+
+
+def apply_factor_principio_activo(df: pd.DataFrame, qty_cols: list) -> pd.DataFrame:
+    """Multiplica cada columna de qty_cols por factor_pa. Requiere que df ya tenga factor_pa."""
+    df = df.copy()
+    for col in qty_cols:
+        if col in df.columns:
+            df[col] = df[col] * df["factor_pa"]
+    return df

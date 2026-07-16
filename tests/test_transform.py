@@ -2,6 +2,7 @@ import pytest
 import pandas as pd
 from data.transform import (
     merge_services, add_proyeccion, add_factor_principio_activo,
+    apply_factor_principio_activo,
 )
 
 MERGE_KEYS = ["PRODUCTO", "EMPRESA"]
@@ -183,3 +184,29 @@ def test_add_factor_principio_activo_mapas_vacios_default_a_uno():
     df = pd.DataFrame([{"PRODUCTO": "HERBICIDA A", "EMPRESA": "AED"}])
     result = add_factor_principio_activo(df, pd.DataFrame(), pd.DataFrame())
     assert result["factor_pa"].iloc[0] == 1.0
+
+
+def test_apply_factor_principio_activo_multiplica_columnas_indicadas():
+    df = pd.DataFrame([{
+        "stock_qty": 100.0, "planificado_qty": 150.0,
+        "ejecutado_qty": 50.0, "pendiente_qty": 30.0,
+        "factor_pa": 0.5,
+    }])
+    result = apply_factor_principio_activo(
+        df, ["stock_qty", "planificado_qty", "ejecutado_qty", "pendiente_qty"]
+    )
+    assert result["stock_qty"].iloc[0] == 50.0
+    assert result["planificado_qty"].iloc[0] == 75.0
+    assert result["ejecutado_qty"].iloc[0] == 25.0
+    assert result["pendiente_qty"].iloc[0] == 15.0
+
+
+def test_apply_factor_principio_activo_no_toca_columnas_no_indicadas():
+    df = pd.DataFrame([{
+        "planificado_mes": 100.0, "ejecutado_mes": 40.0,
+        "ANO_MES": "2026-08", "factor_pa": 2.0,
+    }])
+    result = apply_factor_principio_activo(df, ["planificado_mes", "ejecutado_mes"])
+    assert result["planificado_mes"].iloc[0] == 200.0
+    assert result["ejecutado_mes"].iloc[0] == 80.0
+    assert result["ANO_MES"].iloc[0] == "2026-08"
