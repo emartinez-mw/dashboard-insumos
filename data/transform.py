@@ -152,3 +152,17 @@ def add_proyeccion(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["proyeccion"] = df["stock_qty"] + df["pendiente_qty"] - (df["planificado_qty"] - df["ejecutado_qty"])
     return df
+
+
+def add_factor_principio_activo(df: pd.DataFrame, id_map: pd.DataFrame,
+                                factor_map: pd.DataFrame) -> pd.DataFrame:
+    """Agrega columna factor_pa a df uniendo PRODUCTO -> PRODUCTOID -> factor. NULL o 0 -> 1."""
+    df = df.copy()
+    if id_map.empty or factor_map.empty:
+        df["factor_pa"] = 1.0
+        return df
+    ref = id_map.merge(factor_map, on="PRODUCTOID", how="left")[["PRODUCTO", "FACTOR_PA_RAW"]]
+    df = df.merge(ref, on="PRODUCTO", how="left")
+    factor = pd.to_numeric(df["FACTOR_PA_RAW"], errors="coerce")
+    df["factor_pa"] = factor.fillna(1.0).replace(0, 1.0)
+    return df.drop(columns=["FACTOR_PA_RAW"])

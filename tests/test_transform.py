@@ -1,6 +1,8 @@
 import pytest
 import pandas as pd
-from data.transform import merge_services, add_proyeccion
+from data.transform import (
+    merge_services, add_proyeccion, add_factor_principio_activo,
+)
 
 MERGE_KEYS = ["PRODUCTO", "EMPRESA"]
 
@@ -134,3 +136,50 @@ def test_merge_with_empty_analisis_lote():
     assert isinstance(result, pd.DataFrame)
     assert "stock_qty" in result.columns
     assert "pendiente_qty" in result.columns
+
+
+def test_add_factor_principio_activo_usa_valor_real():
+    df = pd.DataFrame([{"PRODUCTO": "HERBICIDA A", "EMPRESA": "AED"}])
+    id_map = pd.DataFrame([{"PRODUCTO": "HERBICIDA A", "PRODUCTOID": "123"}])
+    factor_map = pd.DataFrame([{"PRODUCTOID": "123", "FACTOR_PA_RAW": "0.61"}])
+
+    result = add_factor_principio_activo(df, id_map, factor_map)
+
+    assert result["factor_pa"].iloc[0] == 0.61
+
+
+def test_add_factor_principio_activo_null_string_default_a_uno():
+    # El DW guarda los nulos como el string literal "NULL", no como NULL real
+    df = pd.DataFrame([{"PRODUCTO": "HERBICIDA A", "EMPRESA": "AED"}])
+    id_map = pd.DataFrame([{"PRODUCTO": "HERBICIDA A", "PRODUCTOID": "123"}])
+    factor_map = pd.DataFrame([{"PRODUCTOID": "123", "FACTOR_PA_RAW": "NULL"}])
+
+    result = add_factor_principio_activo(df, id_map, factor_map)
+
+    assert result["factor_pa"].iloc[0] == 1.0
+
+
+def test_add_factor_principio_activo_cero_default_a_uno():
+    df = pd.DataFrame([{"PRODUCTO": "HERBICIDA A", "EMPRESA": "AED"}])
+    id_map = pd.DataFrame([{"PRODUCTO": "HERBICIDA A", "PRODUCTOID": "123"}])
+    factor_map = pd.DataFrame([{"PRODUCTOID": "123", "FACTOR_PA_RAW": "0"}])
+
+    result = add_factor_principio_activo(df, id_map, factor_map)
+
+    assert result["factor_pa"].iloc[0] == 1.0
+
+
+def test_add_factor_principio_activo_producto_sin_match_default_a_uno():
+    df = pd.DataFrame([{"PRODUCTO": "HERBICIDA DESCONOCIDO", "EMPRESA": "AED"}])
+    id_map = pd.DataFrame([{"PRODUCTO": "HERBICIDA A", "PRODUCTOID": "123"}])
+    factor_map = pd.DataFrame([{"PRODUCTOID": "123", "FACTOR_PA_RAW": "0.61"}])
+
+    result = add_factor_principio_activo(df, id_map, factor_map)
+
+    assert result["factor_pa"].iloc[0] == 1.0
+
+
+def test_add_factor_principio_activo_mapas_vacios_default_a_uno():
+    df = pd.DataFrame([{"PRODUCTO": "HERBICIDA A", "EMPRESA": "AED"}])
+    result = add_factor_principio_activo(df, pd.DataFrame(), pd.DataFrame())
+    assert result["factor_pa"].iloc[0] == 1.0
