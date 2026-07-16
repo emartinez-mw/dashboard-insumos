@@ -47,3 +47,8 @@ def fetch_pendiente() -> pd.DataFrame:
     today = date.today().strftime("%Y-%m-%d")
     params = {**PENDIENTE_FIXED_PARAMS, "PARAMWEBREPORT_FechaHasta": today}
     return _fetch(PENDIENTE_URL, params)
+
+
+def fetch_producto_id_map() -> pd.DataFrame:
+    from api.db import fetch_producto_id_map_db
+    return fetch_producto_id_map_db()

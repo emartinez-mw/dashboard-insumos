@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 from datetime import date
 from unittest.mock import patch, MagicMock
-from api.services import fetch_stock, fetch_analisis_lote, fetch_pendiente
+from api.services import fetch_stock, fetch_analisis_lote, fetch_pendiente, fetch_producto_id_map
 
 
 def _mock_empty(url, params=None, **kwargs):
@@ -57,3 +57,11 @@ def test_fetch_returns_empty_dataframe_on_empty_response():
             df = fetch_stock()
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 0
+
+
+def test_fetch_producto_id_map_returns_dataframe_from_db():
+    sample = pd.DataFrame([{"PRODUCTO": "HERB A", "PRODUCTOID": "123"}])
+    with patch("api.db.fetch_producto_id_map_db", return_value=sample):
+        df = fetch_producto_id_map()
+    assert "PRODUCTOID" in df.columns
+    assert df["PRODUCTOID"].iloc[0] == "123"

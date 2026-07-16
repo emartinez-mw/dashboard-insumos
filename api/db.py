@@ -147,3 +147,30 @@ def fetch_analisis_lote_db(fecha_corte: Optional[str] = None) -> pd.DataFrame:
     except Exception as e:
         print(f"[db] Error conectando a PostgreSQL: {e}")
         return pd.DataFrame(columns=_EMPTY_COLS)
+
+
+_QUERY_PRODUCTO_ID_MAP = f"""
+SELECT DISTINCT
+    laborproducto   AS "PRODUCTO",
+    laborproductoid AS "PRODUCTOID"
+FROM {_TABLE}
+WHERE tipo     = '02 - Insumo'
+  AND campania  = '26-27 Campaña'
+  AND estado   != 'Ordenado'
+"""
+
+
+def fetch_producto_id_map_db() -> pd.DataFrame:
+    _EMPTY = ["PRODUCTO", "PRODUCTOID"]
+    try:
+        conn = _conn()
+        cur = conn.cursor()
+        cur.execute(_QUERY_PRODUCTO_ID_MAP)
+        cols = [desc[0] for desc in cur.description]
+        result = pd.DataFrame(cur.fetchall(), columns=cols)
+        cur.close()
+        conn.close()
+        return result
+    except Exception as e:
+        print(f"[db] Error obteniendo mapa de ProductoID: {e}")
+        return pd.DataFrame(columns=_EMPTY)
