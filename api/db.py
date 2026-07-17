@@ -76,7 +76,7 @@ ORDER BY empresa, ano_mes
 
 
 def fetch_analisis_lote_monthly_db() -> pd.DataFrame:
-    _EMPTY = ["EMPRESA", "EMPRESAPADRE", "FAMILIA", "SUBFAMILIA",
+    _EMPTY = ["PRODUCTO", "EMPRESA", "EMPRESAPADRE", "FAMILIA", "SUBFAMILIA",
               "PRINCIPIOACTIVO", "CENTROLOGISTICO", "ANO_MES",
               "planificado_mes", "ejecutado_mes"]
     try:

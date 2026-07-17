@@ -168,6 +168,15 @@ def load_factor_principio_activo():
     return fetch_producto_id_map(), fetch_relacion_principio_activo()
 
 
+def _apply_factor_if_active(df, id_map, factor_map, active, qty_cols, recompute_proyeccion=False):
+    df = add_factor_principio_activo(df, id_map, factor_map)
+    if active:
+        df = apply_factor_principio_activo(df, qty_cols)
+        if recompute_proyeccion:
+            df = add_proyeccion(df)
+    return df
+
+
 def build_filtered(stock, analisis_lote_df, pendiente, filters):
     merged = merge_services(stock, analisis_lote_df, pendiente)
     merged = add_zona(merged)
@@ -275,17 +284,16 @@ filtered = build_filtered(stock, load_analisis_lote(fecha_corte_activa_iso), pen
 
 # ── FACTOR RELACIÓN PRINCIPIO ACTIVO ────────────────────────────────────────────
 id_map, factor_map = load_factor_principio_activo()
-filtered = add_factor_principio_activo(filtered, id_map, factor_map)
-df_monthly = add_factor_principio_activo(df_monthly, id_map, factor_map)
-
 ver_factor_pa = st.toggle("Ver Relación Principio Activo", value=False)
 
-if ver_factor_pa:
-    filtered = apply_factor_principio_activo(
-        filtered, ["stock_qty", "planificado_qty", "ejecutado_qty", "pendiente_qty"]
-    )
-    filtered = add_proyeccion(filtered)
-    df_monthly = apply_factor_principio_activo(df_monthly, ["planificado_mes", "ejecutado_mes"])
+filtered = _apply_factor_if_active(
+    filtered, id_map, factor_map, ver_factor_pa,
+    ["stock_qty", "planificado_qty", "ejecutado_qty", "pendiente_qty"],
+    recompute_proyeccion=True,
+)
+df_monthly = _apply_factor_if_active(
+    df_monthly, id_map, factor_map, ver_factor_pa, ["planificado_mes", "ejecutado_mes"]
+)
 
 # ── KPI STRIP ─────────────────────────────────────────────────────────────────
 stock_total     = filtered["stock_qty"].sum()
@@ -476,9 +484,15 @@ else:
     )
     for label, fecha in [("Corte 1", fecha1), ("Corte 2", fecha2), ("Corte 3", fecha3)]:
         if fecha:
-            proy_en_fecha = build_filtered(
+            corte_df = build_filtered(
                 stock, load_analisis_lote(fecha.isoformat()), pendiente, filters
-            )["proyeccion"].sum()
+            )
+            corte_df = _apply_factor_if_active(
+                corte_df, id_map, factor_map, ver_factor_pa,
+                ["stock_qty", "planificado_qty", "ejecutado_qty", "pendiente_qty"],
+                recompute_proyeccion=True,
+            )
+            proy_en_fecha = corte_df["proyeccion"].sum()
             mes_corte = fecha.strftime("%Y-%m")
             # NOTA: fig.add_vline(..., annotation_text=..., annotation_position=...)
             # crashea con TypeError en plotly 5.22.0 cuando x es un string (nuestro

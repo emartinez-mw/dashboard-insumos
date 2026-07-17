@@ -161,6 +161,8 @@ def add_factor_principio_activo(df: pd.DataFrame, id_map: pd.DataFrame,
     if id_map.empty or factor_map.empty:
         df["factor_pa"] = 1.0
         return df
+    id_map = id_map.drop_duplicates(subset="PRODUCTO")
+    factor_map = factor_map.drop_duplicates(subset="PRODUCTOID")
     ref = id_map.merge(factor_map, on="PRODUCTOID", how="left")[["PRODUCTO", "FACTOR_PA_RAW"]]
     df = df.merge(ref, on="PRODUCTO", how="left")
     factor = pd.to_numeric(df["FACTOR_PA_RAW"], errors="coerce")

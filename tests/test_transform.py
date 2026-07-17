@@ -186,6 +186,19 @@ def test_add_factor_principio_activo_mapas_vacios_default_a_uno():
     assert result["factor_pa"].iloc[0] == 1.0
 
 
+def test_add_factor_principio_activo_no_fan_out_con_id_map_duplicado():
+    df = pd.DataFrame([{"PRODUCTO": "HERBICIDA A", "EMPRESA": "AED"}])
+    id_map = pd.DataFrame([
+        {"PRODUCTO": "HERBICIDA A", "PRODUCTOID": "123"},
+        {"PRODUCTO": "HERBICIDA A", "PRODUCTOID": "999"},  # dato duplicado/inconsistente
+    ])
+    factor_map = pd.DataFrame([{"PRODUCTOID": "123", "FACTOR_PA_RAW": "0.61"}])
+
+    result = add_factor_principio_activo(df, id_map, factor_map)
+
+    assert len(result) == 1
+
+
 def test_apply_factor_principio_activo_multiplica_columnas_indicadas():
     df = pd.DataFrame([{
         "stock_qty": 100.0, "planificado_qty": 150.0,
