@@ -296,10 +296,12 @@ df_monthly = _apply_factor_if_active(
 )
 
 # ── KPI STRIP ─────────────────────────────────────────────────────────────────
-stock_total     = filtered["stock_qty"].sum()
-pendiente_total = filtered["pendiente_qty"].sum()
-dif_plan_ejec   = filtered["planificado_qty"].sum() - filtered["ejecutado_qty"].sum()
-proy_total      = filtered["proyeccion"].sum() if "proyeccion" in filtered.columns else 0.0
+stock_total       = filtered["stock_qty"].sum()
+planificado_total = filtered["planificado_qty"].sum()
+ejecutado_total   = filtered["ejecutado_qty"].sum()
+dif_plan_ejec      = planificado_total - ejecutado_total
+pendiente_total   = filtered["pendiente_qty"].sum()
+proy_total        = filtered["proyeccion"].sum() if "proyeccion" in filtered.columns else 0.0
 
 proy_color = "#1a6b3a" if proy_total >= 0 else "#dc2626"
 proy_bg    = "#dcfce7" if proy_total >= 0 else "#fee2e2"
@@ -307,49 +309,42 @@ proy_label = "▲ Positiva" if proy_total >= 0 else "▼ Negativa"
 
 st.markdown('<div class="duhau-section" style="margin-top:28px"><div class="duhau-bar"></div><span class="duhau-lbl">Resumen</span></div>', unsafe_allow_html=True)
 
-st.markdown(f"""
-<div style="display:grid;grid-template-columns:repeat(4,1fr);border:2px solid #111;
-            border-radius:4px;overflow:hidden;margin-bottom:8px">
 
-  <div style="padding:28px 28px 24px;border-right:1px solid #e5e7eb;background:#fff">
-    <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
-                color:#9ca3af;margin-bottom:12px;font-family:'Work Sans',sans-serif">Stock Actual</div>
-    <div style="font-family:'Libre Baskerville',serif;font-size:40px;font-weight:700;
-                color:#111;line-height:1">{_fmt(stock_total)}</div>
-    <div style="font-size:13px;font-weight:600;color:#9ca3af;margin-top:6px;
-                font-family:'Work Sans',sans-serif">kg</div>
-  </div>
+def _kpi_card(label, value_html, unit_html, border_right, border_bottom):
+    border_r = "border-right:1px solid #e5e7eb;" if border_right else ""
+    border_b = "border-bottom:1px solid #e5e7eb;" if border_bottom else ""
+    return f"""
+  <div style="padding:22px 22px 19px;{border_r}{border_b}background:#fff">
+    <div style="font-size:8px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;
+                color:#9ca3af;margin-bottom:10px;font-family:'Work Sans',sans-serif">{label}</div>
+    <div style="font-family:'Libre Baskerville',serif;font-size:32px;font-weight:700;
+                color:#111;line-height:1">{value_html}</div>
+    {unit_html}
+  </div>"""
 
-  <div style="padding:28px 28px 24px;border-right:1px solid #e5e7eb;background:#fff">
-    <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
-                color:#9ca3af;margin-bottom:12px;font-family:'Work Sans',sans-serif">Pendiente Recepción</div>
-    <div style="font-family:'Libre Baskerville',serif;font-size:40px;font-weight:700;
-                color:#111;line-height:1">{_fmt(pendiente_total)}</div>
-    <div style="font-size:13px;font-weight:600;color:#9ca3af;margin-top:6px;
-                font-family:'Work Sans',sans-serif">Kg/Lit</div>
-  </div>
 
-  <div style="padding:28px 28px 24px;border-right:1px solid #e5e7eb;background:#fff">
-    <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
-                color:#9ca3af;margin-bottom:12px;font-family:'Work Sans',sans-serif">Dif. Planificado / Ejecutado</div>
-    <div style="font-family:'Libre Baskerville',serif;font-size:40px;font-weight:700;
-                color:#111;line-height:1">{_fmt(dif_plan_ejec)}</div>
-    <div style="font-size:13px;font-weight:600;color:#9ca3af;margin-top:6px;
-                font-family:'Work Sans',sans-serif">Kg/Lit</div>
-  </div>
+_unit = lambda text: f"""<div style="font-size:10px;font-weight:600;color:#9ca3af;margin-top:5px;
+                font-family:'Work Sans',sans-serif">{text}</div>"""
 
-  <div style="padding:28px 28px 24px;background:#fff">
-    <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
-                color:#9ca3af;margin-bottom:12px;font-family:'Work Sans',sans-serif">Proyección Total</div>
-    <div style="font-family:'Libre Baskerville',serif;font-size:40px;font-weight:700;
-                color:{proy_color};line-height:1">{_fmt(proy_total)}</div>
-    <div style="display:inline-flex;align-items:center;gap:4px;margin-top:10px;
-                font-size:11px;font-weight:700;padding:3px 10px;border-radius:3px;
+_proy_badge = f"""<div style="display:inline-flex;align-items:center;gap:3px;margin-top:8px;
+                font-size:9px;font-weight:700;padding:2px 8px;border-radius:2px;
                 background:{proy_bg};color:{proy_color};font-family:'Work Sans',sans-serif">
       {proy_label}
-    </div>
-  </div>
+    </div>"""
 
+kpi_cards = [
+    _kpi_card("Stock Actual", _fmt(stock_total), _unit("kg"), border_right=True, border_bottom=True),
+    _kpi_card("Planificado", _fmt(planificado_total), _unit("Kg/Lit"), border_right=True, border_bottom=True),
+    _kpi_card("Ejecutado", _fmt(ejecutado_total), _unit("Kg/Lit"), border_right=False, border_bottom=True),
+    _kpi_card("Dif. Planificado / Ejecutado", _fmt(dif_plan_ejec), _unit("Kg/Lit"), border_right=True, border_bottom=False),
+    _kpi_card("Pendiente Recepción", _fmt(pendiente_total), _unit("Kg/Lit"), border_right=True, border_bottom=False),
+    _kpi_card("Proyección Total", f'<span style="color:{proy_color}">{_fmt(proy_total)}</span>', _proy_badge, border_right=False, border_bottom=False),
+]
+
+st.markdown(f"""
+<div style="display:grid;grid-template-columns:repeat(3,1fr);border:2px solid #111;
+            border-radius:4px;overflow:hidden;margin-bottom:8px">
+{"".join(kpi_cards)}
 </div>
 """, unsafe_allow_html=True)
 
