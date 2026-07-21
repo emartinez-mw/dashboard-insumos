@@ -357,9 +357,10 @@ st.markdown(f"""
 st.markdown('<div class="duhau-section"><div class="duhau-bar"></div><span class="duhau-lbl">Análisis Cruzado</span></div>', unsafe_allow_html=True)
 
 display_cols = [c for c in [
-    "EMPRESA", "FAMILIA", "SUBFAMILIA", "PRINCIPIOACTIVO", "FORMULACION",
+    "EMPRESA", "FAMILIA", "SUBFAMILIA", "PRINCIPIOACTIVO",
     "PRODUCTO", "CENTROLOGISTICO",
-    "stock_qty", "planificado_qty", "ejecutado_qty", "pendiente_qty", "proyeccion",
+    "stock_qty", "planificado_qty", "ejecutado_qty", "dif_ejec_planif",
+    "pendiente_qty", "proyeccion", "proyeccion_nueva",
 ] if c in filtered.columns]
 
 col_labels = {
@@ -369,17 +370,21 @@ col_labels = {
     "FAMILIA":          "Familia",
     "SUBFAMILIA":       "Subfamilia",
     "PRINCIPIOACTIVO":  "Principio Activo",
-    "FORMULACION":      "Formulación",
     "CENTROLOGISTICO":  "Centro Distribución",
     "stock_qty":        "Stock Actual",
     "planificado_qty":  "Planificado",
     "ejecutado_qty":    "Ejecutado",
-    "pendiente_qty":    "Pendiente Recepción",
+    "dif_ejec_planif":  "Dif. Ejec/Planif",
+    "pendiente_qty":    "Pend. Recepción",
     "proyeccion":       "Proyección",
+    "proyeccion_nueva": "Proyección Nueva",
 }
 
 table_df = filtered[display_cols].copy().rename(columns=col_labels)
-NUM_COLS = ["Stock Actual", "Planificado", "Ejecutado", "Pendiente Recepción", "Proyección"]
+NUM_COLS = [
+    "Stock Actual", "Planificado", "Ejecutado", "Dif. Ejec/Planif",
+    "Pend. Recepción", "Proyección", "Proyección Nueva",
+]
 num_cols_present = [c for c in NUM_COLS if c in table_df.columns]
 text_cols = [c for c in table_df.columns if c not in num_cols_present]
 table_df[text_cols] = table_df[text_cols].fillna("")
@@ -416,10 +421,12 @@ def color_proyeccion(val):
     return ""
 
 
+proyeccion_color_cols = [c for c in ["Proyección", "Proyección Nueva"] if c in table_df.columns]
+
 st.dataframe(
     table_df.style
         .format("{:,.2f}", subset=num_cols_present, na_rep="")
-        .map(color_proyeccion, subset=["Proyección"] if "Proyección" in table_df.columns else [])
+        .map(color_proyeccion, subset=proyeccion_color_cols)
         .set_properties(**{"font-family": "Work Sans, sans-serif", "font-size": "13px"}),
     width="stretch",
     hide_index=True,
