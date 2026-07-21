@@ -358,7 +358,7 @@ kpi_cards = [
     _kpi_card("Planificado", _fmt(planificado_total), _unit("Kg/Lit"), border_right=True, border_bottom=True),
     _kpi_card("Ejecutado", _fmt(ejecutado_total), _unit("Kg/Lit"), border_right=False, border_bottom=True),
     _kpi_card("Dif. Planificado / Ejecutado", _fmt(dif_plan_ejec), _unit("Kg/Lit"), border_right=True, border_bottom=True),
-    _kpi_card("Pendiente Recepción", _fmt(pendiente_total), _unit("Kg/Lit"), border_right=True, border_bottom=True),
+    _kpi_card("Pend. Recepción", _fmt(pendiente_total), _unit("Kg/Lit"), border_right=True, border_bottom=True),
     _kpi_card("Proyección Total", f'<span style="color:{proy_color}">{_fmt(proy_total)}</span>', _proy_badge, border_right=False, border_bottom=True),
     _kpi_card("Dif. Ejec/Planif", _fmt(dif_ejec_planif_total), _unit("Kg/Lit"), border_right=True, border_bottom=False),
     _kpi_card("Proyección Nueva", f'<span style="color:{proy_nueva_color}">{_fmt(proyeccion_nueva_total)}</span>', _proy_nueva_badge, border_right=True, border_bottom=False),
