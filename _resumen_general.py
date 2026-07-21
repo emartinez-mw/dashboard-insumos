@@ -307,10 +307,16 @@ ejecutado_total   = filtered["ejecutado_qty"].sum()
 dif_plan_ejec      = planificado_total - ejecutado_total
 pendiente_total   = filtered["pendiente_qty"].sum()
 proy_total        = filtered["proyeccion"].sum() if "proyeccion" in filtered.columns else 0.0
+dif_ejec_planif_total  = filtered["dif_ejec_planif"].sum() if "dif_ejec_planif" in filtered.columns else 0.0
+proyeccion_nueva_total = filtered["proyeccion_nueva"].sum() if "proyeccion_nueva" in filtered.columns else 0.0
 
 proy_color = "#1a6b3a" if proy_total >= 0 else "#dc2626"
 proy_bg    = "#dcfce7" if proy_total >= 0 else "#fee2e2"
 proy_label = "▲ Positiva" if proy_total >= 0 else "▼ Negativa"
+
+proy_nueva_color = "#1a6b3a" if proyeccion_nueva_total >= 0 else "#dc2626"
+proy_nueva_bg    = "#dcfce7" if proyeccion_nueva_total >= 0 else "#fee2e2"
+proy_nueva_label = "▲ Positiva" if proyeccion_nueva_total >= 0 else "▼ Negativa"
 
 st.markdown('<div class="duhau-section" style="margin-top:28px"><div class="duhau-bar"></div><span class="duhau-lbl">Resumen</span></div>', unsafe_allow_html=True)
 
@@ -337,13 +343,26 @@ _proy_badge = f"""<div style="display:inline-flex;align-items:center;gap:3px;mar
       {proy_label}
     </div>"""
 
+_proy_nueva_badge = f"""<div style="display:inline-flex;align-items:center;gap:3px;margin-top:8px;
+                font-size:9px;font-weight:700;padding:2px 8px;border-radius:2px;
+                background:{proy_nueva_bg};color:{proy_nueva_color};font-family:'Work Sans',sans-serif">
+      {proy_nueva_label}
+    </div>"""
+
+
+def _kpi_placeholder():
+    return '<div style="padding:22px 22px 19px;background:#fff"></div>'
+
 kpi_cards = [
     _kpi_card("Stock Actual", _fmt(stock_total), _unit("kg"), border_right=True, border_bottom=True),
     _kpi_card("Planificado", _fmt(planificado_total), _unit("Kg/Lit"), border_right=True, border_bottom=True),
     _kpi_card("Ejecutado", _fmt(ejecutado_total), _unit("Kg/Lit"), border_right=False, border_bottom=True),
-    _kpi_card("Dif. Planificado / Ejecutado", _fmt(dif_plan_ejec), _unit("Kg/Lit"), border_right=True, border_bottom=False),
-    _kpi_card("Pendiente Recepción", _fmt(pendiente_total), _unit("Kg/Lit"), border_right=True, border_bottom=False),
-    _kpi_card("Proyección Total", f'<span style="color:{proy_color}">{_fmt(proy_total)}</span>', _proy_badge, border_right=False, border_bottom=False),
+    _kpi_card("Dif. Planificado / Ejecutado", _fmt(dif_plan_ejec), _unit("Kg/Lit"), border_right=True, border_bottom=True),
+    _kpi_card("Pendiente Recepción", _fmt(pendiente_total), _unit("Kg/Lit"), border_right=True, border_bottom=True),
+    _kpi_card("Proyección Total", f'<span style="color:{proy_color}">{_fmt(proy_total)}</span>', _proy_badge, border_right=False, border_bottom=True),
+    _kpi_card("Dif. Ejec/Planif", _fmt(dif_ejec_planif_total), _unit("Kg/Lit"), border_right=True, border_bottom=False),
+    _kpi_card("Proyección Nueva", f'<span style="color:{proy_nueva_color}">{_fmt(proyeccion_nueva_total)}</span>', _proy_nueva_badge, border_right=True, border_bottom=False),
+    _kpi_placeholder(),
 ]
 
 st.markdown(f"""
