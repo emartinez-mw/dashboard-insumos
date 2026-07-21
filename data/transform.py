@@ -154,6 +154,21 @@ def add_proyeccion(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def add_dif_ejec_planif(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df["dif_ejec_planif"] = (df["ejecutado_qty"] - df["planificado_qty"]).clip(lower=0)
+    return df
+
+
+def add_proyeccion_nueva(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df["proyeccion_nueva"] = (
+        df["stock_qty"] + df["pendiente_qty"]
+        - (df["planificado_qty"] - df["ejecutado_qty"]).clip(lower=0)
+    )
+    return df
+
+
 def add_factor_principio_activo(df: pd.DataFrame, id_map: pd.DataFrame,
                                 factor_map: pd.DataFrame) -> pd.DataFrame:
     """Agrega columna factor_pa a df uniendo PRODUCTO -> PRODUCTOID -> factor. NULL o 0 -> 1."""

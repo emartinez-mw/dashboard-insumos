@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 from data.transform import (
     merge_services, add_proyeccion, add_factor_principio_activo,
-    apply_factor_principio_activo,
+    apply_factor_principio_activo, add_dif_ejec_planif, add_proyeccion_nueva,
 )
 
 MERGE_KEYS = ["PRODUCTO", "EMPRESA"]
@@ -223,3 +223,59 @@ def test_apply_factor_principio_activo_no_toca_columnas_no_indicadas():
     assert result["planificado_mes"].iloc[0] == 200.0
     assert result["ejecutado_mes"].iloc[0] == 80.0
     assert result["ANO_MES"].iloc[0] == "2026-08"
+
+
+def test_add_dif_ejec_planif_ejecutado_mayor():
+    df = pd.DataFrame([{"ejecutado_qty": 120.0, "planificado_qty": 100.0}])
+    result = add_dif_ejec_planif(df)
+    assert result["dif_ejec_planif"].iloc[0] == 20.0
+
+
+def test_add_dif_ejec_planif_ejecutado_menor():
+    df = pd.DataFrame([{"ejecutado_qty": 50.0, "planificado_qty": 150.0}])
+    result = add_dif_ejec_planif(df)
+    assert result["dif_ejec_planif"].iloc[0] == 0.0
+
+
+def test_add_dif_ejec_planif_iguales():
+    df = pd.DataFrame([{"ejecutado_qty": 80.0, "planificado_qty": 80.0}])
+    result = add_dif_ejec_planif(df)
+    assert result["dif_ejec_planif"].iloc[0] == 0.0
+
+
+def test_add_dif_ejec_planif_ambos_cero():
+    df = pd.DataFrame([{"ejecutado_qty": 0.0, "planificado_qty": 0.0}])
+    result = add_dif_ejec_planif(df)
+    assert result["dif_ejec_planif"].iloc[0] == 0.0
+
+
+def test_add_proyeccion_nueva_planificado_mayor():
+    # Igual que test_add_proyeccion_formula: planificado > ejecutado, no hay clip
+    # = 100 + 30 - (150 - 50) = 30, idéntico a add_proyeccion en este caso
+    df = pd.DataFrame([{
+        "stock_qty": 100.0, "pendiente_qty": 30.0,
+        "planificado_qty": 150.0, "ejecutado_qty": 50.0,
+    }])
+    result = add_proyeccion_nueva(df)
+    assert result["proyeccion_nueva"].iloc[0] == 30.0
+
+
+def test_add_proyeccion_nueva_no_suma_excedente_ejecucion():
+    # ejecutado > planificado: add_proyeccion sumaria el excedente (45), proyeccion_nueva no (15)
+    df = pd.DataFrame([{
+        "stock_qty": 10.0, "pendiente_qty": 5.0,
+        "planificado_qty": 50.0, "ejecutado_qty": 80.0,
+    }])
+    resultado_viejo = add_proyeccion(df)
+    resultado_nuevo = add_proyeccion_nueva(df)
+    assert resultado_viejo["proyeccion"].iloc[0] == 45.0
+    assert resultado_nuevo["proyeccion_nueva"].iloc[0] == 15.0
+
+
+def test_add_proyeccion_nueva_iguales():
+    df = pd.DataFrame([{
+        "stock_qty": 20.0, "pendiente_qty": 0.0,
+        "planificado_qty": 40.0, "ejecutado_qty": 40.0,
+    }])
+    result = add_proyeccion_nueva(df)
+    assert result["proyeccion_nueva"].iloc[0] == 20.0
