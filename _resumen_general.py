@@ -27,6 +27,7 @@ from api.services import (
 from data.transform import (
     merge_services, add_proyeccion, add_zona, build_proyeccion_temporal,
     add_factor_principio_activo, apply_factor_principio_activo,
+    add_dif_ejec_planif, add_proyeccion_nueva,
 )
 
 pd.set_option("styler.render.max_elements", 5_000_000)
@@ -174,6 +175,8 @@ def _apply_factor_if_active(df, id_map, factor_map, active, qty_cols, recompute_
         df = apply_factor_principio_activo(df, qty_cols)
         if recompute_proyeccion:
             df = add_proyeccion(df)
+            df = add_dif_ejec_planif(df)
+            df = add_proyeccion_nueva(df)
     return df
 
 
@@ -181,6 +184,8 @@ def build_filtered(stock, analisis_lote_df, pendiente, filters):
     merged = merge_services(stock, analisis_lote_df, pendiente)
     merged = add_zona(merged)
     merged = add_proyeccion(merged)
+    merged = add_dif_ejec_planif(merged)
+    merged = add_proyeccion_nueva(merged)
     for field, selected in filters.items():
         if selected and field in merged.columns:
             merged = merged[merged[field].isin(selected)]
